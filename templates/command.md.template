@@ -1,0 +1,32 @@
+# {{COMMAND_NAME}}
+
+このコマンドは workspace-bootstrap-setup で自動生成されました。
+更新日: {{TIMESTAMP}}
+
+## 実行手順
+
+以下の手順でワークスペースを起動する。
+workspace-bootstrap-run スキルのロジックに従って実行すること。
+
+1. `~/.claude/workspace-bootstrap/sites.yaml` を読み込む
+2. Chrome プロファイル「{{PROFILE_NAME}}」の確認
+3. Claude in Chrome MCP の接続確認（`tabs_context_mcp`）
+4. カテゴリ順にサイトを起動：
+{{CATEGORY_LIST}}
+5. 全サイト起動後に状態確認
+6. 完了レポートを表示
+
+## 設定
+
+- サイト定義: `~/.claude/workspace-bootstrap/sites.yaml`
+- アカウント: `~/.claude/workspace-bootstrap/accounts.yaml`
+- 合計: {{TOTAL_SITES}} サイト / {{TOTAL_CATEGORIES}} カテゴリ / {{TOTAL_ACCOUNTS}} アカウント
+
+## MCP依存
+
+Claude in Chrome MCP が必要:
+- tabs_create_mcp, tabs_context_mcp, navigate, read_page, get_page_text
+
+## サービスを追加・変更するには
+
+`/workspace-bootstrap-setup` を再実行してください。

@@ -1,0 +1,14 @@
+{
+  "name": "workspace-bootstrap",
+  "version": "2.0.0",
+  "description": "AI Workspace Setup Wizard — Build your personal AI workspace in minutes. Interactive setup generates your custom bootstrap command.",
+  "author": "KMNWorks",
+  "license": "MIT",
+  "skills": [
+    ".claude/skills/workspace-bootstrap-setup",
+    ".claude/skills/workspace-bootstrap-run"
+  ],
+  "mcpServers": {},
+  "hooks": {},
+  "settings": {}
+}

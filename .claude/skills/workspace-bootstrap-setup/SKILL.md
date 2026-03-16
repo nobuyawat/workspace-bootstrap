@@ -1,0 +1,413 @@
+---
+name: workspace-bootstrap-setup
+description: >
+  AI Workspace セットアップウィザード。対話形式でユーザーの利用サービスを
+  登録し、自分専用のワークスペース起動コマンドを自動生成する。
+
+  以下のケースでこのスキルを使うこと：
+  - ユーザーが「ワークスペース設定」「セットアップ」「workspace setup」に言及したとき
+  - workspace-bootstrap を初めてインストールした直後
+  - 登録サービスを追加・変更したいとき
+  - 「自分のAI環境を作りたい」のような指示を受けたとき
+argument-hint: "[--reset]"
+allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
+---
+
+# Workspace Bootstrap — Setup Wizard
+
+**自分専用のAIワークスペースを対話形式で構築するウィザード**
+
+---
+
+## 実行手順（このスキルが呼ばれたら以下を順に実行すること）
+
+### Step 1: ウェルカム表示 → 既存設定チェック
+
+まず以下のメッセージをユーザーに表示する：
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🚀 Workspace Bootstrap — Setup Wizard
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Build your personal AI workspace in minutes.
+
+  This wizard will:
+  ① Register the services you use daily
+  ② Configure accounts for each service
+  ③ Generate YOUR personal bootstrap command
+
+  Let's get started!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+次に Bash ツールで `ls ~/.claude/workspace-bootstrap/sites.yaml 2>/dev/null` を実行して既存設定の有無を確認する。
+
+- ファイルが存在し、かつ $ARGUMENTS に `--reset` が含まれていない場合：
+  AskUserQuestion で「既存の設定が見つかりました。追加しますか？ それとも最初からやり直しますか？ (add / reset)」と質問する。
+  `reset` の場合は既存ファイルを削除する。
+  `add` の場合は Read ツールで既存の sites.yaml を読み込み、既存サービス一覧を把握した上で Step 3 に進む。
+
+- ファイルが存在しない場合、または `--reset` の場合：
+  Bash で `mkdir -p ~/.claude/workspace-bootstrap` を実行し、Step 2 に進む。
+
+### Step 2: Chrome プロファイル名
+
+AskUserQuestion で以下を質問する：
+
+```
+What name would you like for your AI workspace Chrome profile?
+(This creates a separate Chrome profile — do NOT sync to Google)
+
+Default: AI-Workspace
+
+Enter profile name or press Enter for default:
+```
+
+- 空の場合は `AI-Workspace` をデフォルトにする。
+- 回答をメモリに保持する：`profile_name = (ユーザーの回答)`
+
+### Step 3: サービス登録ループ
+
+以下のループを繰り返す。各ループで1つのサービスを登録する。
+ループ中の全サービスデータは**メモリ上のリスト**に蓄積する。
+
+#### 3-A: サービス名
+
+AskUserQuestion で質問する：
+
+```
+What service do you want to add?
+(e.g., ChatGPT, Claude, Midjourney, GitHub, Notion...)
+
+Service name:
+```
+
+#### 3-B: URL
+
+サービス名を以下の内蔵辞書と照合する。一致した場合は URL を提案する。
+
+```
+内蔵辞書 known_services:
+  ChatGPT → https://chat.openai.com
+  Claude → https://claude.ai
+  Google AI Studio → https://aistudio.google.com
+  Gemini → https://gemini.google.com
+  Perplexity → https://www.perplexity.ai
+  Manus → https://manus.ai
+  Midjourney → https://www.midjourney.com
+  Canva → https://www.canva.com
+  Figma → https://www.figma.com
+  Runway → https://app.runwayml.com
+  Suno → https://suno.com
+  ElevenLabs → https://elevenlabs.io
+  Vrew → https://vrew.voyagerx.com
+  Epidemic Sound → https://www.epidemicsound.com
+  Rodin → https://hyper3d.ai
+  GitHub → https://github.com
+  Vercel → https://vercel.com/dashboard
+  Netlify → https://app.netlify.com
+  Supabase → https://supabase.com/dashboard
+  Stripe → https://dashboard.stripe.com
+  Firebase → https://console.firebase.google.com
+  GCP Console → https://console.cloud.google.com
+  Slack → https://app.slack.com
+  Discord → https://discord.com/app
+  X → https://x.com
+  Instagram → https://www.instagram.com
+  YouTube Studio → https://studio.youtube.com
+  Note → https://note.com
+  Notion → https://www.notion.so
+  Google Drive → https://drive.google.com
+  NotebookLM → https://notebooklm.google.com
+```
+
+- 一致した場合の質問：
+  ```
+  Suggested URL for {service_name}: {suggested_url}
+  Press Enter to accept, or type a different URL:
+  ```
+- 一致しなかった場合：
+  ```
+  URL for {service_name}: (e.g., https://example.com)
+  ```
+- URL が https:// で始まらない場合はやり直し。
+
+#### 3-C: アカウント
+
+これまでに登録されたアカウントの一覧を表示する。
+
+- 既存アカウントがある場合：
+  ```
+  Which account do you use for {service_name}?
+
+  Your accounts so far:
+  [1] user@gmail.com (ChatGPT, Claude)
+  [2] work@gmail.com (GitHub)
+  [N] Enter a new email
+
+  Select number or type email:
+  ```
+- 既存アカウントがない場合：
+  ```
+  Which email account do you use for {service_name}?
+  (e.g., your-email@gmail.com)
+  ```
+
+#### 3-D: カテゴリ
+
+```
+Category for {service_name}?
+
+[1] AI — AI tools & LLMs
+[2] Creation — Design, video, audio
+[3] Development — Code, hosting, infrastructure
+[4] Communication — Social, messaging
+[5] Research — Docs, notes, knowledge
+[6] Custom — Enter your own
+
+Select (1-6):
+```
+
+カスタムの場合はカテゴリ名を入力させる。
+
+#### 3-E: 確認＆ループ
+
+登録を確認表示する：
+
+```
+✅ Added: {service_name}
+   URL: {url}
+   Account: {account}
+   Category: {category}
+
+Services so far ({count}):
+| # | Service     | Category    | Account           |
+|---|-------------|-------------|-------------------|
+| 1 | ChatGPT     | AI          | user@gmail.com    |
+| 2 | Midjourney  | Creation    | work@gmail.com    |
+
+Add another service? (yes / no)
+```
+
+- `yes` → Step 3-A に戻る
+- `no` → Step 4 に進む
+- サービスが0件で `no` と言われた場合：「At least 1 service is required. Let's add one!」と表示して Step 3-A に戻る
+
+### Step 4: 設定ファイル生成
+
+メモリ上の全サービスデータから、以下の2ファイルを Write ツールで生成する。
+
+#### 4-1: sites.yaml
+
+Write ツールで `~/.claude/workspace-bootstrap/sites.yaml` に書き出す。
+
+フォーマット：
+
+```yaml
+# Workspace Bootstrap — Site Configuration
+# Generated by /workspace-bootstrap-setup
+# Last updated: {現在の日時}
+# Profile: {profile_name}
+# Total: {total} sites / {category_count} categories
+
+profile:
+  name: "{profile_name}"
+  sync_enabled: false
+
+categories:
+  - name: "{category_slug}"
+    label: "{category_label}"
+    order: {order_number}
+    sites:
+      - name: "{service_name}"
+        url: "{url}"
+        preferred_account: "{account}"
+```
+
+カテゴリ順は：AI → Creation → Development → Communication → Research → Custom の順。
+同カテゴリ内のサービスは登録順。
+
+#### 4-2: accounts.yaml
+
+Write ツールで `~/.claude/workspace-bootstrap/accounts.yaml` に書き出す。
+
+フォーマット：
+
+```yaml
+# Workspace Bootstrap — Account Registry
+# Generated by /workspace-bootstrap-setup
+# Last updated: {現在の日時}
+
+accounts:
+  - email: "{account_email}"
+    sites:
+      - {service_name_1}
+      - {service_name_2}
+    site_count: {count}
+```
+
+生成完了メッセージを表示する：
+
+```
+✅ Configuration saved!
+
+📁 ~/.claude/workspace-bootstrap/
+   ├── sites.yaml      ({count} sites, {categories} categories)
+   └── accounts.yaml   ({account_count} accounts)
+```
+
+### Step 5: パーソナルコマンド生成
+
+AskUserQuestion で質問する：
+
+```
+🎯 Final Step — Create Your Personal Command
+
+Choose a name for YOUR workspace command.
+This becomes your personal slash command in Claude Code.
+
+Examples: my-workspace, dev-setup, morning-routine
+
+Command name (without /):
+```
+
+バリデーション：
+- 英数字とハイフンのみ許可
+- 空は不可
+- 既存コマンドがある場合は上書き確認
+
+次に、Bash で `mkdir -p ~/.claude/commands` を実行し、
+Write ツールで `~/.claude/commands/{command_name}.md` に以下を書き出す：
+
+```markdown
+---
+description: "{profile_name} ワークスペースを起動する（{total}サイト / {category_count}カテゴリ）"
+---
+
+# /{command_name}
+
+このコマンドは workspace-bootstrap-setup で自動生成された。
+
+## 実行手順
+
+1. `~/.claude/workspace-bootstrap/sites.yaml` を Read ツールで読み込む
+2. profile.name の値を確認する（Chromeプロファイル名）
+3. Claude in Chrome MCP の `tabs_context_mcp` で現在のタブ一覧を取得する
+4. sites.yaml の categories を order 順に処理する：
+   - カテゴリヘッダーを表示: 「📂 Opening {label}...」
+   - カテゴリ内の各 site について：
+     a. `tabs_create_mcp` で新規タブを作成
+     b. `navigate` でその site の url に遷移
+     c. 「  ✓ {name}」と表示
+   - カテゴリ完了: 「  ✅ {label}: {count} sites opened」
+5. 全サイト起動後、完了レポートを表示する
+
+## 完了レポート
+
+起動結果を以下の形式で表示する：
+
+  ✅ {command_name} Complete
+  Profile: {profile_name}
+  Sites: {opened}/{total}
+
+  | Category | Sites | Status |
+  |----------|-------|--------|
+  （カテゴリごとに1行）
+
+  ⚠️ で問題があったサイトを表示（あれば）
+
+## 設定ファイル
+
+- ~/.claude/workspace-bootstrap/sites.yaml
+- ~/.claude/workspace-bootstrap/accounts.yaml
+
+## MCP 依存
+
+Claude in Chrome MCP が必要：
+tabs_create_mcp, tabs_context_mcp, navigate, read_page, get_page_text
+
+## 注意
+
+- Chrome プロファイル「{profile_name}」で Claude in Chrome が接続されていること
+- 初回は各サイトで手動ログインが必要（Cookie で次回から復元）
+- Google 同期はしないこと
+- サービス追加は /workspace-bootstrap-setup を再実行
+
+## 引数
+
+$ARGUMENTS
+
+- 引数なし: 全サイト起動
+- カテゴリ名: そのカテゴリのみ（例: ai, creation, development）
+- --dry-run: 起動計画のみ表示
+```
+
+**重要**: 上記テンプレート中の `{command_name}`, `{profile_name}`, `{total}`, `{category_count}` は、
+Step 1〜4 で収集した実際の値に置き換えること。テンプレート変数をそのまま書き出してはならない。
+
+### Step 6: 完了表示
+
+以下のメッセージを表示して終了：
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🎉 Setup Complete!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  📊 Summary:
+     Services:   {count}
+     Categories: {category_count}
+     Accounts:   {account_count}
+     Profile:    {profile_name}
+
+  📁 Generated files:
+     ~/.claude/workspace-bootstrap/sites.yaml
+     ~/.claude/workspace-bootstrap/accounts.yaml
+     ~/.claude/commands/{command_name}.md
+
+  🚀 Next steps:
+
+     1. Create Chrome profile "{profile_name}"
+        → Chrome Settings > Profiles > Add Profile
+        → Do NOT sign in to Google
+
+     2. Install "Claude in Chrome" extension
+        → In the new profile
+
+     3. Run your command:
+        /{command_name}
+
+     4. First time: log in to each site manually
+        → Cookies will remember you next time
+
+  💡 Tips:
+     • /workspace-bootstrap-setup      → add more services
+     • /workspace-bootstrap-setup --reset → start over
+     • /{command_name} works from any project directory
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+## エラーハンドリング
+
+| ケース | 対応 |
+|--------|------|
+| URL が https:// で始まらない | 「Please include https:// (e.g., https://example.com)」と再質問 |
+| サービス 0件で完了しようとした | 「At least 1 service is required.」と Step 3 に戻る |
+| コマンド名に無効文字 | 「Use only letters, numbers, and hyphens.」と再質問 |
+| 同名コマンドが既存 | 「/{name} already exists. Overwrite? (yes/no)」と確認 |
+| ~/.claude/commands/ が無い | Bash で mkdir -p する |
+| sites.yaml が既存 | Step 1 で add/reset を確認済み |
+
+---
+
+## 制約事項
+
+- パスワードは一切保存しない
+- メールアドレスは sites.yaml / accounts.yaml にのみ保存
+- ログイン操作は行わない（Cookie 依存）
+- Chrome プロファイルの作成は手動
+- Google 同期は必ず OFF にする設計
