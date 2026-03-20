@@ -1,0 +1,55 @@
+# ============================================
+# Workspace Bootstrap — .gitignore
+# ============================================
+# このリポジトリは配布用（Public）です。
+# 実データは絶対にコミットしないこと。
+# ============================================
+
+# --- 実データファイル（絶対禁止）---
+accounts.yaml
+sites.yaml
+*.yaml
+!templates/*.yaml.template
+
+# --- 環境変数・シークレット ---
+.env
+.env.*
+*.key
+*.pem
+*.p12
+secrets/
+credentials/
+credentials.json
+
+# --- APIキー・トークン ---
+token.txt
+*.token
+*.secret
+
+# --- ログ・キャッシュ ---
+logs/
+*.log
+cache/
+.cache/
+tmp/
+
+# --- OS生成ファイル ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- エディタ・IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Node.js（将来の拡張用）---
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# --- 生成済みコマンド（ユーザー固有）---
+# commands/ はローカル生成なのでリポジトリには含めない
+commands/
